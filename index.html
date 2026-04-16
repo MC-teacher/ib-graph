@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 16: Analysis and Approaches – Graphs</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f0; color: #1a1a1a; }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; height: 52px;
+    background: #1a1a2e; display: flex; align-items: center;
+    justify-content: space-between; padding: 0 20px; z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  nav .brand { color: #fff; font-size: 14px; font-weight: 600; }
+  nav .nav-btns { display: flex; gap: 8px; }
+  nav button {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25);
+    color: #fff; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px;
+  }
+  nav button:hover { background: rgba(255,255,255,0.22); }
+  nav .slide-counter { color: rgba(255,255,255,0.7); font-size: 13px; min-width: 70px; text-align: center; }
+
+  /* SLIDE CONTAINER */
+  .slides { margin-top: 52px; height: calc(100vh - 52px); overflow: hidden; position: relative; }
+  .slide {
+    display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    overflow-y: auto; padding: 40px;
+  }
+  .slide.active { display: block; }
+
+  /* COVER SLIDE */
+  .cover {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: white; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; text-align: center; min-height: 100%;
+  }
+  .cover h1 { font-size: 2.8rem; font-weight: 700; margin-bottom: 8px; }
+  .cover .subtitle { font-size: 1.1rem; color: rgba(255,255,255,0.7); margin-bottom: 48px; }
+  .cover .chapter-num { font-size: 1rem; color: #e94560; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 16px; }
+
+  /* TOC CARDS */
+  .toc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 900px; width: 100%; }
+  .toc-card {
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 12px; padding: 24px 20px; cursor: pointer; transition: all 0.2s;
+    text-align: left;
+  }
+  .toc-card:hover { background: rgba(255,255,255,0.18); transform: translateY(-3px); }
+  .toc-card .num { font-size: 0.75rem; color: #e94560; letter-spacing: 2px; margin-bottom: 8px; }
+  .toc-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 8px; }
+  .toc-card p { font-size: 0.82rem; color: rgba(255,255,255,0.6); line-height: 1.5; }
+
+  /* SECTION SLIDES */
+  .section-header {
+    background: linear-gradient(135deg, #1a1a2e, #0f3460);
+    color: white; border-radius: 12px; padding: 36px 40px; margin-bottom: 32px;
+  }
+  .section-header .sec-label { font-size: 0.8rem; color: #e94560; letter-spacing: 2px; margin-bottom: 8px; }
+  .section-header h2 { font-size: 2rem; font-weight: 700; }
+
+  /* KEY POINT BOX */
+  .keypoint {
+    background: #e94560; color: white; border-radius: 8px;
+    padding: 16px 20px; margin: 20px 0; font-size: 1rem; font-weight: 500;
+  }
+  .keypoint .kp-label { font-size: 0.75rem; letter-spacing: 2px; opacity: 0.8; margin-bottom: 4px; }
+
+  /* CONCEPT BOX */
+  .concept-box {
+    background: white; border: 1px solid #e0e0d8; border-radius: 10px;
+    padding: 20px 24px; margin: 16px 0; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .concept-box h4 { font-size: 0.9rem; color: #666; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* EXERCISE SECTIONS */
+  .exercise-section { margin: 24px 0; }
+  .exercise-section h3 {
+    font-size: 1rem; font-weight: 600; color: #1a1a2e;
+    border-left: 4px solid #e94560; padding-left: 12px; margin-bottom: 16px;
+  }
+
+  /* QUESTION CARD */
+  .q-card {
+    background: white; border: 1px solid #e0e0d8; border-radius: 10px;
+    padding: 18px 20px; margin: 12px 0;
+  }
+  .q-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .q-num { font-size: 0.8rem; font-weight: 700; color: #e94560; min-width: 24px; }
+  .q-text { font-size: 0.95rem; line-height: 1.6; flex: 1; }
+  .q-text .sub { margin-left: 16px; margin-top: 6px; color: #333; }
+  .sol-btn {
+    background: #1a1a2e; color: white; border: none; border-radius: 6px;
+    padding: 6px 14px; font-size: 0.8rem; cursor: pointer; white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .sol-btn:hover { background: #0f3460; }
+  .solution {
+    display: none; background: #f0f8f0; border: 1px solid #c8e6c9;
+    border-radius: 8px; padding: 14px 16px; margin-top: 12px; font-size: 0.9rem; line-height: 1.7;
+  }
+  .solution.visible { display: block; }
+  .solution .sol-label { font-size: 0.75rem; color: #2e7d32; font-weight: 600; letter-spacing: 1px; margin-bottom: 6px; }
+
+  /* WORKED EXAMPLE */
+  .worked-example {
+    background: #fff8e1; border: 1px solid #ffe082; border-radius: 10px;
+    padding: 20px 24px; margin: 16px 0;
+  }
+  .worked-example h4 { color: #e65100; font-size: 0.85rem; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
+
+  /* TIP BOX */
+  .tip-box {
+    background: #e3f2fd; border-left: 4px solid #1976d2;
+    border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 12px 0; font-size: 0.9rem;
+  }
+  .tip-box strong { color: #1565c0; }
+
+  /* MATH */
+  .math { font-family: 'Times New Roman', serif; font-style: italic; }
+  .formula {
+    background: #f8f8f4; border: 1px solid #e0e0d8; border-radius: 6px;
+    padding: 10px 16px; margin: 10px 0; font-family: 'Times New Roman', serif;
+    font-size: 1.05rem; text-align: center;
+  }
+
+  /* PROGRESS BAR */
+  .progress-bar { height: 3px; background: #e94560; transition: width 0.3s; position: fixed; top: 52px; left: 0; z-index: 999; }
+
+  /* TABLE */
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 12px 0; }
+  th { background: #1a1a2e; color: white; padding: 10px 12px; text-align: left; }
+  td { padding: 9px 12px; border-bottom: 1px solid #eee; }
+  tr:nth-child(even) { background: #fafaf8; }
+
+  /* PILL LABEL */
+  .pill { display: inline-block; background: #e94560; color: white; font-size: 0.72rem; border-radius: 20px; padding: 2px 10px; margin-left: 8px; vertical-align: middle; }
+
+  @media (max-width: 700px) {
+    .toc-grid { grid-template-columns: 1fr; }
+    .slide { padding: 20px; }
+    .cover h1 { font-size: 1.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<nav>
+  <span class="brand">Chapter 16 · Analysis and Approaches: Graphs</span>
+  <div class="nav-btns">
+    <button onclick="prevSlide()">← Prev</button>
+    <span class="slide-counter" id="counter">1 / 1</span>
+    <button onclick="nextSlide()">Next →</button>
+  </div>
+</nav>
+
+<div class="slides" id="slides">
+
+<!-- ==================== SLIDE 0: COVER ==================== -->
+<div class="slide active" id="slide-0">
+<div class="cover">
+  <div class="chapter-num">Chapter 16</div>
+  <h1>Analysis and Approaches</h1>
+  <div class="subtitle">Graphs — Transformations, Rational, Exponential & Logarithmic Functions</div>
+  <div class="toc-grid">
+    <div class="toc-card" onclick="goTo(1)">
+      <div class="num">SECTION 1</div>
+      <h3>16A — Transformations of Graphs</h3>
+      <p>Translations, stretches, reflections, composite transformations</p>
+    </div>
+    <div class="toc-card" onclick="goTo(2)">
+      <div class="num">SECTION 2</div>
+      <h3>Transformations — Worked Examples</h3>
+      <p>Step-by-step worked examples 16.1 – 16.7</p>
+    </div>
+    <div class="toc-card" onclick="goTo(3)">
+      <div class="num">SECTION 3</div>
+      <h3>Exercise 16A — All Questions</h3>
+      <p>Questions 1–38 with toggle solutions</p>
+    </div>
+    <div class="toc-card" onclick="goTo(4)">
+      <div class="num">SECTION 4</div>
+      <h3>16B — Rational Functions</h3>
+      <p>Reciprocal function, f(x) = (ax+b)/(cx+d), hyperbolas</p>
+    </div>
+    <div class="toc-card" onclick="goTo(5)">
+      <div class="num">SECTION 5</div>
+      <h3>Exercise 16B — All Questions</h3>
+      <p>Questions 1–16 with toggle solutions</p>
+    </div>
+    <div class="toc-card" onclick="goTo(6)">
+      <div class="num">SECTION 6</div>
+      <h3>16C — Exponential & Logarithmic</h3>
+      <p>Graphs of a^x and log_a(x), key properties</p>
+    </div>
+    <div class="toc-card" onclick="goTo(7)">
+      <div class="num">SECTION 7</div>
+      <h3>Exercise 16C & Mixed Practice</h3>
+      <p>All exercises + mixed practice questions 1–23</p>
+    </div>
+    <div class="toc-card" onclick="goTo(8)">
+      <div class="num">SECTION 8</div>
+      <h3>Chapter Checklist</h3>
+      <p>Summary of all key points and skills</p>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ==================== SLIDE 1: 16A THEORY ==================== -->
+<div class="slide" id="slide-1">
+  <div class="section-header">
+    <div class="sec-label">SECTION 16A</div>
+    <h2>Transformations of Graphs</h2>
+  </div>
+
+  <div class="concept-box">
+    <h4>Three Types of Transformation</h4>
+    <p>To transform a familiar graph (e.g. <span class="math">y = 1/x</span>) into a more complicated one, you need to know three types: <strong>Translations</strong>, <strong>Stretches</strong>, and <strong>Reflections</strong>.</p>
+  </div>
+
+  <h3 style="margin: 24px 0 12px; color: #e94560;">■ Translations</h3>
+
+  <div class="keypoint">
+    <div class="kp-label">KEY POINT 16.1</div>
+    y = f(x) + b is a <strong>vertical translation by b</strong> of y = f(x).
+  </div>
+  <div class="tip-box"><strong>Tip:</strong> b can be negative — this results in a downward translation.</div>
+
+  <div class="keypoint">
+    <div class="kp-label">KEY POINT 16.2</div>
+    y = f(x + c) is a <strong>horizontal translation by −c</strong> of y = f(x).
+  </div>
+  <div class="tip-box"><strong>Tip:</strong> y = f(x + c) moves <strong>to the left</strong> by c, not to the right.</div>
+
+  <div class="concept-box">
+    <h4>Proof 16.1 — Horizontal Translation</h4>
+    <p>Let <span class="math">y₁ = f(x₁)</span> on the original curve and <span class="math">y₂ = f(x₂ + c)</span> on the transformed curve.</p>
+    <p>If <span class="math">x₁ = x₂ + c</span>, then <span class="math">y₁ = y₂</span>. Rearranging: <span class="math">x₂ = x₁ − c</span>.</p>
+    <p>So the point <span class="math">(x₁, y)</span> on <span class="math">y = f(x)</span> maps to <span class="math">(x₁ − c, y)</span> on <span class="math">y = f(x + c)</span> — a horizontal shift of <strong>−c</strong>.</p>
+  </div>
+
+  <h3 style="margin: 24px 0 12px; color: #e94560;">■ Stretches</h3>
+
+  <div class="keypoint">
+    <div class="kp-label">KEY POINT 16.3</div>
+    y = pf(x) is a <strong>vertical stretch with scale factor p</strong> of y = f(x).
+  </div>
+  <div class="tip-box"><strong>Tip:</strong> p can be a fraction less than one (compression).</div>
+
+  <div class="keypoint">
+    <div class="kp-label">KEY POINT 16.4</div>
+    y = f(qx) is a <strong>horizontal stretch with scale factor 1/q</strong> of y = f(x).
+  </div>
+
+  <h3 style="margin: 24px 0 12px; color: #e94560;">■ Reflections</h3>
+
+  <div class="keypoint">
+    <div class="kp-label">KEY POINT 16.5</div>
+    y = −f(x) is a <strong>reflection in the x-axis</strong> of y = f(x).
+  </div>
+
+  <div class="keypoint">
+    <div class="kp-label">KEY POINT 16.6</div>
+    y = f(−x) is a <strong>reflection in the y-axis</strong> of y = f(x).
+  </div>
+
+  <div class="tip-box"><strong>Tip:</strong> Alterations inside the brackets affect x-coordinates (horizontal); outside the brackets affect y-coordinates (vertical).</div>
+
+  <h3 style="margin: 24px 0 12px; color: #e94560;">■ Composite Transformations</h3>
+
+  <div class="keypoint">
+    <div class="kp-label">KEY POINT 16.7</div>
+    <ul style="padding-left: 18px; margin-top: 6px;">
+      <li>When two <strong>vertical</strong> transformations are applied, <strong>order matters</strong>: y = pf(x) + b is a vertical stretch (×p) followed by a vertical translation (+b).</li>
+      <li>When one vertical and one horizontal transformation are applied, <strong>order does not matter</strong>.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 2: WORKED EXAMPLES 16A ==================== -->
+<div class="slide" id="slide-2">
+  <div class="section-header">
+    <div class="sec-label">SECTION 16A</div>
+    <h2>Worked Examples</h2>
+  </div>
+
+  <div class="worked-example">
+    <h4>Worked Example 16.1</h4>
+    <p><strong>Question:</strong> The graph of y = f(x) has a peak at (1, 4) and passes through (3, 0). Sketch the graph y = f(x) − 4.</p>
+    <div class="solution visible">
+      <div class="sol-label">SOLUTION</div>
+      <p>y = f(x) − 4 is a <strong>vertical translation by −4</strong> (Key Point 16.1).</p>
+      <p>Every y-coordinate decreases by 4:</p>
+      <ul style="padding-left: 18px; margin-top: 6px;">
+        <li>Peak (1, 4) → (1, 0)</li>
+        <li>Point (3, 0) → (3, −4)</li>
+      </ul>
+      <p>The shape is identical, shifted 4 units down.</p>
+    </div>
+  </div>
+
+  <div class="worked-example">
+    <h4>Worked Example 16.2</h4>
+    <p><strong>Question:</strong> The graph of y = x² − 3x + 5 is translated to the left by 2 units. Find the equation of the resulting graph in the form y = ax² + bx + c.</p>
+    <div class="solution visible">
+      <div class="sol-label">SOLUTION</div>
+      <p>Let f(x) = x² − 3x + 5. Translation left 2 means horizontal translation by −2, so new graph is y = f(x + 2).</p>
+      <div class="formula">y = (x+2)² − 3(x+2) + 5 = x² + 4x + 4 − 3x − 6 + 5 = <strong>x² + x + 3</strong></div>
+    </div>
+  </div>
+
+  <div class="worked-example">
+    <h4>Worked Example 16.3</h4>
+    <p><strong>Question:</strong> The graph of y = f(x) has peak at (1, 4). Sketch y = f(⅓x).</p>
+    <div class="solution visible">
+      <div class="sol-label">SOLUTION</div>
+      <p>y = f(⅓x) is a <strong>horizontal stretch with scale factor 1/(1/3) = 3</strong> (Key Point 16.4).</p>
+      <p>Every x-coordinate is multiplied by 3: peak (1, 4) → (3, 4). The curve is stretched horizontally.</p>
+    </div>
+  </div>
+
+  <div class="worked-example">
+    <h4>Worked Example 16.4</h4>
+    <p><strong>Question:</strong> Describe the transformation mapping y = 2x² − 8x − 5 to y = x² − 4x − 2.5.</p>
+    <div class="solution visible">
+      <div class="sol-label">SOLUTION</div>
+      <p>Let f(x) = 2x² − 8x − 5. Then:</p>
+      <div class="formula">x² − 4x − 2.5 = ½(2x² − 8x − 5) = ½f(x)</div>
+      <p>This is a <strong>vertical stretch with scale factor ½</strong>.</p>
+    </div>
+  </div>
+
+  <div class="worked-example">
+    <h4>Worked Example 16.5</h4>
+    <p><strong>Question:</strong> The graph of y = f(x) has a single vertex at (5, −2). Find the coordinates of the vertex of y = f(−x).</p>
+    <div class="solution visible">
+      <div class="sol-label">SOLUTION</div>
+      <p>y = f(−x) is a reflection in the y-axis — the x-coordinate is multiplied by −1.</p>
+      <p>Vertex: (5, −2) → <strong>(−5, −2)</strong></p>
+    </div>
+  </div>
+
+  <div class="worked-example">
+    <h4>Worked Example 16.6</h4>
+    <p><strong>Question:</strong> The graph of y = f(x) has key points (−1, 6) and (3, −10). Sketch (a) y = 3f(x − 2) and (b) y = −f(x) + 4.</p>
+    <div class="solution visible">
+      <div class="sol-label">SOLUTION</div>
+      <p><strong>(a) y = 3f(x − 2):</strong> One vertical and one horizontal transformation — order doesn't matter.</p>
+      <ul style="padding-left: 18px; margin-top: 6px;">
+        <li>Horizontal translation +2: (−1,6)→(1,6), (3,−10)→(5,−10)</li>
+        <li>Vertical stretch ×3: (1,6)→(1,18), (5,−10)→(5,−30)</li>
+      </ul>
+      <p><strong>(b) y = −f(x) + 4:</strong> Two vertical transformations — order matters.</p>
+      <ul style="padding-left: 18px; margin-top: 6px;">
+        <li>First reflect in x-axis: (−1,6)→(−1,−6), (3,−10)→(3,10)</li>
+        <li>Then translate +4: (−1,−6)→(−1,−2), (3,10)→(3,14)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="worked-example">
+    <h4>Worked Example 16.7</h4>
+    <p><strong>Question:</strong> Describe a sequence of transformations mapping y = x³ − x to y = 2x³ − 2x − 1.</p>
+    <div class="solution visible">
+      <div class="sol-label">SOLUTION</div>
+      <p>Let f(x) = x³ − x. Then:</p>
+      <div class="formula">2x³ − 2x − 1 = 2(x³ − x) − 1 = 2f(x) − 1</div>
+      <p><strong>Vertical stretch with scale factor 2, followed by vertical translation by −1.</strong></p>
+      <p>(Since both are vertical, order matters: stretch first, then translate.)</p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 3: EXERCISE 16A ==================== -->
+<div class="slide" id="slide-3">
+  <div class="section-header">
+    <div class="sec-label">EXERCISE 16A</div>
+    <h2>All Questions with Solutions</h2>
+  </div>
+  <p style="margin-bottom: 20px; color: #555;">The graph of y = f(x) is given (piecewise, with open/closed circles). Use Key Points 16.1–16.7.</p>
+
+  <div class="exercise-section">
+    <h3>Questions 1–4: Vertical & Horizontal Translations (sketch the required graph)</h3>
+    <div id="ex16a-q1"></div>
+  </div>
+
+  <div class="exercise-section">
+    <h3>Questions 5–8: Find equation after translation</h3>
+    <div id="ex16a-q2"></div>
+  </div>
+
+  <div class="exercise-section">
+    <h3>Questions 9–12: Stretches (sketch the required graph)</h3>
+    <div id="ex16a-q3"></div>
+  </div>
+
+  <div class="exercise-section">
+    <h3>Questions 13–16: Describe the transformation (from y = 12x² − 6x)</h3>
+    <div id="ex16a-q4"></div>
+  </div>
+
+  <div class="exercise-section">
+    <h3>Questions 17–20: Find vertex coordinates after reflection in x-axis</h3>
+    <div id="ex16a-q5"></div>
+  </div>
+
+  <div class="exercise-section">
+    <h3>Questions 19–20: Find vertex coordinates after reflection in y-axis</h3>
+    <div id="ex16a-q6"></div>
+  </div>
+
+  <div class="exercise-section">
+    <h3>Questions 21–24: Composite transformations (sketch)</h3>
+    <div id="ex16a-q7"></div>
+  </div>
+
+  <div class="exercise-section">
+    <h3>Questions 25–28: Describe sequence of transformations (from y = 4x² + x)</h3>
+    <div id="ex16a-q8"></div>
+  </div>
+
+  <div class="exercise-section">
+    <h3>Question 29: Multi-part transformation question</h3>
+    <div id="ex16a-q9"></div>
+  </div>
+
+  <div class="exercise-section">
+    <h3>Questions 30–38: Challenge & Exam-style questions</h3>
+    <div id="ex16a-q10"></div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 4: 16B RATIONAL FUNCTIONS ==================== -->
+<div class="slide" id="slide-4">
+  <div class="section-header">
+    <div class="sec-label">SECTION 16B</div>
+    <h2>Rational Functions</h2>
+  </div>
+
+  <div class="concept-box">
+    <h4>Definition</h4>
+    <p>A <strong>linear rational function</strong> is any function that can be written as a fraction where both the numerator and denominator are linear expressions.</p>
+  </div>
+
+  <h3 style="margin: 20px 0 12px; color: #e94560;">■ The Reciprocal Function f(x) = 1/x</h3>
+
+  <div class="keypoint">
+    <div class="kp-label">KEY POINT 16.8</div>
+    The graph of <span class="math">y = 1/x</span> is a <strong>hyperbola</strong> with:
+    <ul style="padding-left: 18px; margin-top: 8px;">
+      <li>Domain: x ∈ ℝ, x ≠ 0</li>
+      <li>Range: f(x) ∈ ℝ, f(x) ≠ 0</li>
+      <li>Asymptotes: x = 0 (y-axis) and y = 0 (x-axis)</li>
+      <li>Symmetrical about y = x</li>
+    </ul>
+  </div>
+
+  <div class="tip-box"><strong>Self-inverse function:</strong> The inverse of f(x) = 1/x is f⁻¹(x) = 1/x — reflecting y = 1/x in the line y = x gives y = 1/x again.</div>
+
+  <h3 style="margin: 20px 0 12px; color: #e94560;">■ Rational Functions f(x) = (ax + b)/(cx + d)</h3>
+
+  <div class="keypoint">
+    <div class="kp-label">KEY POINT 16.9</div>
+    For <span class="math">f(x) = (ax + b)/(cx + d)</span>:
+    <ul style="padding-left: 18px; margin-top: 8px;">
+      <li><strong>y-intercept:</strong> x = 0 → y = b/d</li>
+      <li><strong>x-intercept:</strong> y = 0 → x = −b/a</li>
+      <li><strong>Vertical asymptote:</strong> denominator = 0 → x = −d/c</li>
+      <li><strong>Horizontal asymptote:</strong> as x → ±∞ → y = a/c</li>
+    </ul>
+    The shape is a <strong>hyperbola</strong> (same shape as y = 1/x).
+  </div>
+
+  <div class="worked-example">
+    <h4>Worked Example 16.8</h4>
+    <p><strong>Question:</strong> Sketch the graph of y = (2x + 3)/(x + 4), clearly labelling all asymptotes and axis intercepts.</p>
+    <div class="solution visible">
+      <div class="sol-label">SOLUTION</div>
+      <p>Here a = 2, b = 3, c = 1, d = 4.</p>
+      <ul style="padding-left: 18px; margin-top: 6px;">
+        <li><strong>y-intercept:</strong> y = b/d = 3/4 → point (0, 3/4)</li>
+        <li><strong>x-intercept:</strong> x = −b/a = −3/2 → point (−3/2, 0)</li>
+        <li><strong>Vertical asymptote:</strong> x = −d/c = −4</li>
+        <li><strong>Horizontal asymptote:</strong> y = a/c = 2</li>
+      </ul>
+      <p>The graph is a hyperbola with two branches. Remember: always include the top-left branch!</p>
+    </div>
+  </div>
+
+  <div class="tip-box"><strong>Tip:</strong> When using a calculator to sketch rational functions, the top-left branch is often missed. Hyperbolas always have two branches.</div>
+</div>
+
+<!-- ==================== SLIDE 5: EXERCISE 16B ==================== -->
+<div class="slide" id="slide-5">
+  <div class="section-header">
+    <div class="sec-label">EXERCISE 16B</div>
+    <h2>Rational Functions — All Questions</h2>
+  </div>
+  <div id="ex16b-all"></div>
+</div>
+
+<!-- ==================== SLIDE 6: 16C EXPONENTIAL & LOG ==================== -->
+<div class="slide" id="slide-6">
+  <div class="section-header">
+    <div class="sec-label">SECTION 16C</div>
+    <h2>Exponential and Logarithmic Functions</h2>
+  </div>
+
+  <h3 style="margin: 20px 0 12px; color: #e94560;">■ Exponential Functions y = aˣ</h3>
+
+  <div class="keypoint">
+    <div class="kp-label">KEY POINT 16.10</div>
+    The graph of <span class="math">y = aˣ</span> (a > 0) has two shapes:
+    <ul style="padding-left: 18px; margin-top: 8px;">
+      <li><strong>a > 1:</strong> Increasing exponential (grows rapidly)</li>
+      <li><strong>0 &lt; a &lt; 1:</strong> Decreasing exponential (decays)</li>
+    </ul>
+    In both cases: passes through (0, 1) since a⁰ = 1. The x-axis (y = 0) is an asymptote.
+  </div>
+
+  <div class="tip-box"><strong>Note:</strong> When a = 1, the graph is just y = 1 (a horizontal line) — this is NOT considered an exponential graph.</div>
+
+  <div class="worked-example">
+    <h4>Worked Example 16.9</h4>
+    <p><strong>Question:</strong> Sketch the graph of y = 4⁻ˣ, stating any axis intercepts and asymptotes.</p>
+    <div class="solution visible">
+      <div class="sol-label">SOLUTION</div>
+      <p>Use laws of exponents: y = 4⁻ˣ = (4⁻¹)ˣ = (¼)ˣ</p>
+      <p>This has the standard shape of y = aˣ for 0 &lt; a &lt; 1 (decreasing).</p>
+      <ul style="padding-left: 18px; margin-top: 6px;">
+        <li>y-intercept: (0, 1)</li>
+        <li>Asymptote: y = 0 (the x-axis)</li>
+      </ul>
+      <p>Note: y = 4⁻ˣ can also be seen as a reflection of y = 4ˣ in the y-axis.</p>
+    </div>
+  </div>
+
+  <h3 style="margin: 20px 0 12px; color: #e94560;">■ Logarithmic Functions y = logₐ(x)</h3>
+
+  <div class="keypoint">
+    <div class="kp-label">KEY POINT 16.11</div>
+    The graph of <span class="math">y = logₐ x</span> (a, x > 0) has two shapes:
+    <ul style="padding-left: 18px; margin-top: 8px;">
+      <li><strong>a > 1:</strong> Increasing, passes through (1, 0), y-axis is asymptote</li>
+      <li><strong>0 &lt; a &lt; 1:</strong> Decreasing, passes through (1, 0), y-axis is asymptote</li>
+    </ul>
+  </div>
+
+  <div class="keypoint">
+    <div class="kp-label">KEY POINT 16.12 — Inverse Relationship</div>
+    <div class="formula" style="font-size:1.1rem; letter-spacing:0.5px;">a<sup>log<sub>a</sub> x</sup> = x &nbsp;&nbsp;&nbsp; and &nbsp;&nbsp;&nbsp; log<sub>a</sub>(a<sup>x</sup>) = x</div>
+    <p style="margin-top: 8px;">y = a<sup>x</sup> and y = log<sub>a</sub> x are inverse functions — one is a reflection of the other in the line y = x.</p>
+  </div>
+
+  <div class="keypoint">
+    <div class="kp-label">KEY POINT 16.13 — Change of Base</div>
+    <div class="formula" style="font-size:1.1rem;">a<sup>x</sup> = e<sup>x ln a</sup></div>
+    <p style="margin-top: 8px;">It is sometimes useful to convert any exponential to base e.</p>
+  </div>
+
+  <div class="worked-example">
+    <h4>Worked Example 16.10</h4>
+    <p><strong>Question:</strong> On the same axes, sketch y = 3ˣ and y = log₃ x, clearly showing the relationship.</p>
+    <div class="solution visible">
+      <div class="sol-label">SOLUTION</div>
+      <p>y = 3ˣ and y = log₃ x are inverse functions, so one is the reflection of the other in the line y = x.</p>
+      <ul style="padding-left: 18px; margin-top: 6px;">
+        <li>y = 3ˣ passes through (0, 1) and (1, 3)</li>
+        <li>y = log₃ x passes through (1, 0) and (3, 1)</li>
+        <li>Both are reflections of each other in y = x</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="worked-example">
+    <h4>Worked Example 16.11</h4>
+    <p><strong>a)</strong> Show that aˣ = e^(x ln a) for a > 0.</p>
+    <p><strong>b)</strong> Write 5ˣ in the form e^(kx), giving k to 3 s.f.</p>
+    <div class="solution visible">
+      <div class="sol-label">SOLUTION</div>
+      <p><strong>a)</strong> Using x ln a = ln(aˣ): e^(x ln a) = e^(ln(aˣ)) = aˣ ✓</p>
+      <p><strong>b)</strong> 5ˣ = e^(x ln 5) = e^(1.61x), so <strong>k = 1.61</strong></p>
+    </div>
+  </div>
+
+  <div class="concept-box">
+    <h4>Be the Examiner 16.1 — Which solution is correct?</h4>
+    <p>Transformations applied to y = ln x: (1) translate up 5, (2) horizontal stretch ×2, (3) reflect in x-axis.</p>
+    <table>
+      <tr><th>Solution 1</th><th>Solution 2</th><th>Solution 3 ✓</th></tr>
+      <tr><td>y = −ln(2x) + 5</td><td>y = −ln(x/2) − 5</td><td>y = −ln(x/2) + 5</td></tr>
+    </table>
+    <p style="margin-top: 10px; font-size: 0.9rem; color: #555;"><strong>Correct: Solution 3.</strong> Horizontal stretch ×2 replaces x with x/2 (not 2x). Reflection in x-axis negates the whole function: −(ln(x/2) + 5) = −ln(x/2) − 5 is wrong; −(ln(x/2)) + 5 = −ln(x/2) + 5 ✓ (reflect after translating up preserves +5).</p>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 7: EXERCISE 16C + MIXED PRACTICE ==================== -->
+<div class="slide" id="slide-7">
+  <div class="section-header">
+    <div class="sec-label">EXERCISES 16C + MIXED PRACTICE</div>
+    <h2>All Questions with Solutions</h2>
+  </div>
+  <div id="ex16c-all"></div>
+  <div style="margin-top: 32px;" id="mixed-all"></div>
+</div>
+
+<!-- ==================== SLIDE 8: CHECKLIST ==================== -->
+<div class="slide" id="slide-8">
+  <div class="section-header">
+    <div class="sec-label">CHAPTER CHECKLIST</div>
+    <h2>Summary of Key Skills</h2>
+  </div>
+
+  <div class="concept-box">
+    <h4>Single Transformations</h4>
+    <table>
+      <tr><th>Equation</th><th>Transformation</th></tr>
+      <tr><td>y = f(x) + b</td><td>Vertical translation by b</td></tr>
+      <tr><td>y = f(x + c)</td><td>Horizontal translation by −c</td></tr>
+      <tr><td>y = pf(x)</td><td>Vertical stretch, scale factor p</td></tr>
+      <tr><td>y = f(qx)</td><td>Horizontal stretch, scale factor 1/q</td></tr>
+      <tr><td>y = −f(x)</td><td>Reflection in x-axis</td></tr>
+      <tr><td>y = f(−x)</td><td>Reflection in y-axis</td></tr>
+    </table>
+  </div>
+
+  <div class="concept-box">
+    <h4>Composite Transformations</h4>
+    <p>• Two vertical: <strong>order matters</strong> — y = pf(x) + b means stretch first, then translate.</p>
+    <p>• One vertical + one horizontal: <strong>order doesn't matter</strong>.</p>
+  </div>
+
+  <div class="concept-box">
+    <h4>Reciprocal Function f(x) = 1/x</h4>
+    <p>Hyperbola. Domain/range: x ≠ 0 / f(x) ≠ 0. Asymptotes: x = 0, y = 0. Symmetrical about y = x. Self-inverse.</p>
+  </div>
+
+  <div class="concept-box">
+    <h4>Rational Function f(x) = (ax + b)/(cx + d)</h4>
+    <table>
+      <tr><th>Feature</th><th>Formula</th></tr>
+      <tr><td>y-intercept</td><td>y = b/d</td></tr>
+      <tr><td>x-intercept</td><td>x = −b/a</td></tr>
+      <tr><td>Vertical asymptote</td><td>x = −d/c</td></tr>
+      <tr><td>Horizontal asymptote</td><td>y = a/c</td></tr>
+    </table>
+  </div>
+
+  <div class="concept-box">
+    <h4>Exponential Functions y = aˣ</h4>
+    <p>• a > 1: increasing; 0 &lt; a &lt; 1: decreasing</p>
+    <p>• Always passes through (0, 1); x-axis is asymptote</p>
+    <p>• aˣ = e^(x ln a)</p>
+  </div>
+
+  <div class="concept-box">
+    <h4>Logarithmic Functions y = logₐ x</h4>
+    <p>• Always passes through (1, 0); y-axis is asymptote</p>
+    <p>• Inverse of y = aˣ — reflection in y = x</p>
+    <p>• a^(logₐ x) = x and logₐ(aˣ) = x</p>
+  </div>
+
+  <div style="margin-top: 32px; text-align: center;">
+    <button onclick="goTo(0)" style="background: #e94560; color: white; border: none; padding: 14px 32px; border-radius: 8px; font-size: 1rem; cursor: pointer;">← Back to Contents</button>
+  </div>
+</div>
+
+</div><!-- /slides -->
+
+<script>
+let current = 0;
+const totalSlides = 9;
+
+function showSlide(n) {
+  document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+  document.getElementById('slide-' + n).classList.add('active');
+  current = n;
+  document.getElementById('counter').textContent = (n + 1) + ' / ' + totalSlides;
+  document.getElementById('progress').style.width = ((n + 1) / totalSlides * 100) + '%';
+  document.getElementById('slide-' + n).scrollTop = 0;
+}
+function nextSlide() { if (current < totalSlides - 1) showSlide(current + 1); }
+function prevSlide() { if (current > 0) showSlide(current - 1); }
+function goTo(n) { showSlide(n); }
+
+function toggleSolution(btn) {
+  const sol = btn.closest('.q-card').querySelector('.solution');
+  if (sol.classList.contains('visible')) {
+    sol.classList.remove('visible');
+    btn.textContent = 'Solution';
+  } else {
+    sol.classList.add('visible');
+    btn.textContent = 'Hide';
+  }
+}
+
+function makeQ(num, question, solution, showSolDefault) {
+  return `<div class="q-card">
+    <div class="q-header">
+      <span class="q-num">Q${num}</span>
+      <div class="q-text">${question}</div>
+      <button class="sol-btn" onclick="toggleSolution(this)">Solution</button>
+    </div>
+    <div class="solution${showSolDefault ? ' visible' : ''}">
+      <div class="sol-label">SOLUTION</div>
+      ${solution}
+    </div>
+  </div>`;
+}
+
+// ========== EXERCISE 16A ==========
+const q16a1 = [
+  makeQ(1,'<b>a)</b> y = f(x) + 3 &nbsp;&nbsp; <b>b)</b> y = f(x) + 4<br><em>Sketch the required graph using the given y = f(x).</em>',
+    '<b>a)</b> Vertical translation +3: every y-value increases by 3.<br><b>b)</b> Vertical translation +4: every y-value increases by 4.'),
+  makeQ(2,'<b>a)</b> y = f(x) − 2 &nbsp;&nbsp; <b>b)</b> y = f(x) − 5',
+    '<b>a)</b> Vertical translation −2: every y-value decreases by 2.<br><b>b)</b> Vertical translation −5: every y-value decreases by 5.'),
+  makeQ(3,'<b>a)</b> y = f(x + 4) &nbsp;&nbsp; <b>b)</b> y = f(x + 1)',
+    '<b>a)</b> Horizontal translation −4 (left 4): every x-value decreases by 4.<br><b>b)</b> Horizontal translation −1 (left 1).'),
+  makeQ(4,'<b>a)</b> y = f(x − 3) &nbsp;&nbsp; <b>b)</b> y = f(x − 2)',
+    '<b>a)</b> Horizontal translation +3 (right 3): every x-value increases by 3.<br><b>b)</b> Horizontal translation +2 (right 2).'),
+].join('');
+
+const q16a2 = [
+  makeQ(5,'<b>a)</b> y = 3x² after a translation of 3 units vertically up.<br><b>b)</b> y = 2x³ after a translation of 5 units vertically up.',
+    '<b>a)</b> y = 3x² + 3<br><b>b)</b> y = 2x³ + 5'),
+  makeQ(6,'<b>a)</b> y = 8x² − 7x + 1 after a translation of 5 units vertically down.<br><b>b)</b> y = 8x² − 7x + 1 after a translation of 2 units vertically down.',
+    '<b>a)</b> y = 8x² − 7x + 1 − 5 = 8x² − 7x − 4<br><b>b)</b> y = 8x² − 7x + 1 − 2 = 8x² − 7x − 1'),
+  makeQ(7,'<b>a)</b> y = 4x² after a translation of 3 units to the right.<br><b>b)</b> y = 3x³ after a translation of 6 units to the right.',
+    '<b>a)</b> Replace x with (x−3): y = 4(x−3)² = 4x² − 24x + 36<br><b>b)</b> y = 3(x−6)³'),
+  makeQ(8,'<b>a)</b> y = x² + 6x + 2 after a translation of 3 units to the left.<br><b>b)</b> y = x² + 5x + 4 after a translation of 2 units to the left.',
+    '<b>a)</b> Replace x with (x+3): y = (x+3)² + 6(x+3) + 2 = x²+6x+9+6x+18+2 = x²+12x+29<br><b>b)</b> Replace x with (x+2): y = (x+2)²+5(x+2)+4 = x²+4x+4+5x+10+4 = x²+9x+18'),
+].join('');
+
+const q16a3 = [
+  makeQ(9,'<b>a)</b> y = 2f(x) &nbsp;&nbsp; <b>b)</b> y = 3f(x)',
+    '<b>a)</b> Vertical stretch ×2: all y-values doubled.<br><b>b)</b> Vertical stretch ×3: all y-values tripled.'),
+  makeQ(10,'<b>a)</b> y = ½f(x) &nbsp;&nbsp; <b>b)</b> y = ⅓f(x)',
+    '<b>a)</b> Vertical stretch ×½: all y-values halved.<br><b>b)</b> Vertical stretch ×⅓: all y-values multiplied by ⅓.'),
+  makeQ(11,'<b>a)</b> y = f(3x) &nbsp;&nbsp; <b>b)</b> y = f(2x)',
+    '<b>a)</b> Horizontal stretch ×⅓: all x-values divided by 3.<br><b>b)</b> Horizontal stretch ×½: all x-values halved.'),
+  makeQ(12,'<b>a)</b> y = f(x/2) &nbsp;&nbsp; <b>b)</b> y = f(x/3)',
+    '<b>a)</b> q = ½, so horizontal stretch scale factor = 1/(½) = 2: all x-values doubled.<br><b>b)</b> Horizontal stretch ×3: all x-values tripled.'),
+].join('');
+
+const q16a4 = [
+  makeQ(13,'<b>a)</b> y = 36x² − 18x &nbsp;&nbsp; <b>b)</b> y = 24x² − 12x<br><em>Describe the transformation mapping y = 12x² − 6x to the given equation.</em>',
+    '<b>a)</b> 36x²−18x = 3(12x²−6x) = 3f(x) → Vertical stretch, scale factor 3.<br><b>b)</b> 24x²−12x = 2(12x²−6x) = 2f(x) → Vertical stretch, scale factor 2.'),
+  makeQ(14,'<b>a)</b> y = 6x² − 3x &nbsp;&nbsp; <b>b)</b> y = 4x² − 2x',
+    '<b>a)</b> 6x²−3x = ½(12x²−6x) → Vertical stretch, scale factor ½.<br><b>b)</b> 4x²−2x = ⅓(12x²−6x) → Vertical stretch, scale factor ⅓.'),
+  makeQ(15,'<b>a)</b> y = 48x² − 12x &nbsp;&nbsp; <b>b)</b> y = 108x² − 18x',
+    '<b>a)</b> 48x²−12x = 12(2x)²−6(2x) = f(2x) → Horizontal stretch, scale factor ½.<br><b>b)</b> 108x²−18x = 12(3x)²−6(3x) = f(3x) → Horizontal stretch, scale factor ⅓.'),
+  makeQ(16,'<b>a)</b> y = 3x² − 3x &nbsp;&nbsp; <b>b)</b> y = (4/3)x² − 2x',
+    '<b>a)</b> 3x²−3x = 12(x/2)²−6(x/2) = f(x/2) → Horizontal stretch, scale factor 2.<br><b>b)</b> (4/3)x²−2x = 12(x/3)²−6(x/3) = f(x/3) → Horizontal stretch, scale factor 3.'),
+].join('');
+
+const q16a5 = [
+  makeQ(17,'<b>a)</b> f(x) has vertex at (2, 3). Find vertex of y = −f(x).<br><b>b)</b> f(x) has vertex at (5, 1). Find vertex of y = −f(x).',
+    '<b>a)</b> Reflection in x-axis: y-coordinate negated → vertex (2, −3).<br><b>b)</b> Vertex → (5, −1).'),
+  makeQ(18,'<b>a)</b> f(x) has vertex at (−2, −4). Find vertex of y = −f(x).<br><b>b)</b> f(x) has vertex at (−3, −1). Find vertex of y = −f(x).',
+    '<b>a)</b> (−2, −4) → (−2, 4).<br><b>b)</b> (−3, −1) → (−3, 1).'),
+].join('');
+
+const q16a6 = [
+  makeQ(19,'<b>a)</b> f(x) has vertex at (2, 3). Find vertex of y = f(−x).<br><b>b)</b> f(x) has vertex at (1, 5). Find vertex of y = f(−x).',
+    '<b>a)</b> Reflection in y-axis: x-coordinate negated → vertex (−2, 3).<br><b>b)</b> Vertex → (−1, 5).'),
+  makeQ(20,'<b>a)</b> f(x) has vertex at (−2, −3). Find vertex of y = f(−x).<br><b>b)</b> f(x) has vertex at (−5, −1). Find vertex of y = f(−x).',
+    '<b>a)</b> (−2, −3) → (2, −3).<br><b>b)</b> (−5, −1) → (5, −1).'),
+].join('');
+
+const q16a7 = [
+  makeQ(21,'<b>a)</b> y = f(x − 2) + 3 &nbsp;&nbsp; <b>b)</b> y = f(x + 2) − 3',
+    '<b>a)</b> Horizontal +2 and vertical +3: one each, order doesn\'t matter.<br><b>b)</b> Horizontal −2 and vertical −3.'),
+  makeQ(22,'<b>a)</b> y = 3f(2x) &nbsp;&nbsp; <b>b)</b> y = 2f(3x)',
+    '<b>a)</b> Horizontal stretch ×½ and vertical stretch ×3 (one of each, order doesn\'t matter).<br><b>b)</b> Horizontal stretch ×⅓ and vertical stretch ×2.'),
+  makeQ(23,'<b>a)</b> y = 4f(−x) &nbsp;&nbsp; <b>b)</b> y = 2f(−x)',
+    '<b>a)</b> Reflection in y-axis, then vertical stretch ×4 (or in either order, as one is vertical and one horizontal).<br><b>b)</b> Reflection in y-axis, then vertical stretch ×2.'),
+  makeQ(24,'<b>a)</b> y = 5 − 3f(x) &nbsp;&nbsp; <b>b)</b> y = 3 − 2f(x)',
+    '<b>a)</b> Two vertical transformations, order matters: vertical stretch ×3 (with reflection: multiply by −3), then vertical translation +5. Or: reflect in x-axis → stretch ×3 → translate +5.<br><b>b)</b> Reflect in x-axis → stretch ×2 → translate +3.'),
+].join('');
+
+const q16a8 = [
+  makeQ(25,'Describe transformation from y = 4x² + x to:<br><b>a)</b> y = 12x² + 3x − 2 &nbsp;&nbsp; <b>b)</b> y = 20x² + 5x + 1',
+    '<b>a)</b> 12x²+3x−2 = 3(4x²+x)−2 = 3f(x)−2 → Vertical stretch ×3, then translate −2.<br><b>b)</b> 20x²+5x+1 = 5(4x²+x)+1 = 5f(x)+1 → Vertical stretch ×5, then translate +1.'),
+  makeQ(26,'<b>a)</b> y = x² + ½x − 1 &nbsp;&nbsp; <b>b)</b> y = x² + ½x + 3',
+    '<b>a)</b> x²+½x−1 = ¼(4x²+x)−1 = ¼f(x)−1 → Vertical stretch ×¼, then translate −1.<br><b>b)</b> ¼f(x)+3 → Vertical stretch ×¼, then translate +3.'),
+  makeQ(27,'<b>a)</b> y = 4(x−2)² + (x−2) + 5 &nbsp;&nbsp; <b>b)</b> y = 4(x+3)² + (x+3) − 4',
+    '<b>a)</b> f(x−2)+5: horizontal translation +2, vertical translation +5 (order doesn\'t matter).<br><b>b)</b> f(x+3)−4: horizontal translation −3, vertical translation −4.'),
+  makeQ(28,'<b>a)</b> y = 36x² − 3x &nbsp;&nbsp; <b>b)</b> y = 16x² − 2x',
+    '<b>a)</b> 36x²−3x = 4(9x²)+x/... Rewrite: f(3x)=4(3x)²+(3x)=36x²+3x — not quite. Use substitution: 36x²−3x=9(4x²)−3x. Try f(3x/2): 4(3x/2)²+(3x/2)=9x²+3x/2. Let\'s try directly: 36x²−3x = 9·4x²−3x. Factor: if we write as 3(12x²−x), that\'s not f. Actually: 36x²−3x = 4(3x)²+(3x) ... no. Proper approach: 36x²−3x relates to f via vertical stretch? 36x²−3x = 9(4x²)+? No. Actually by horizontal compression: f(3x)=4(3x)²+(3x)=36x²+3x. Not matching. Try f(−3x)=36x²−3x. So: horizontal stretch ×(−⅓) — i.e. reflection in y-axis and horizontal stretch ×⅓.<br><b>b)</b> f(2x)=4(2x)²+(2x)=16x²+2x. f(−2x)=16x²−2x → reflection in y-axis and horizontal stretch ×½.'),
+].join('');
+
+const q16a9 = [
+  makeQ(29,'The graph of y = f(x) is shown (with key points). On separate diagrams, sketch:<br><b>a)</b> y = f(x − 2) &nbsp;&nbsp; <b>b)</b> y = 2f(x) &nbsp;&nbsp; <b>c)</b> y = f(½x) − 1',
+    '<b>a)</b> Horizontal translation +2 (right 2).<br><b>b)</b> Vertical stretch ×2: all y-values doubled, x-values unchanged.<br><b>c)</b> Horizontal stretch ×2 (q=½, so scale factor=2), then translate −1 (order doesn\'t matter for one vertical + one horizontal).'),
+].join('');
+
+const q16a10 = [
+  makeQ(30,'The graph of y = 3x² − 4x is translated 3 units in the negative x-direction and then stretched vertically with scale factor 4. Find the equation in the form y = ax² + bx + c.',
+    'Step 1 — translate left 3: f(x+3) = 3(x+3)²−4(x+3) = 3x²+18x+27−4x−12 = 3x²+14x+15.<br>Step 2 — vertical stretch ×4: y = 4(3x²+14x+15) = <b>12x²+56x+60</b>.'),
+  makeQ(31,'The graph of y = eˣ is translated horizontally 2 units in the positive direction and then stretched vertically with scale factor 3. Find the equation.',
+    'Step 1 — translate right 2: y = e^(x−2).<br>Step 2 — vertical stretch ×3: y = <b>3e^(x−2)</b>.'),
+  makeQ(32,'<b>a)</b> Write x² − 10x + 11 in the form (x − h)² + k.<br><b>b)</b> Describe two transformations mapping y = x² to y = x² − 10x + 11.',
+    '<b>a)</b> x²−10x+11 = (x−5)²−25+11 = <b>(x−5)²−14</b>.<br><b>b)</b> Horizontal translation +5 (right 5), then vertical translation −14 (down 14).'),
+  makeQ(33,'<b>a)</b> Write 5x² + 30x + 45 in the form a(x + h)².<br><b>b)</b> Describe two transformations mapping y = x² to y = 5x² + 30x + 45.',
+    '<b>a)</b> 5x²+30x+45 = 5(x²+6x+9) = <b>5(x+3)²</b>.<br><b>b)</b> Horizontal translation −3 (left 3), then vertical stretch ×5.'),
+  makeQ(34,'The graph of y = x² is stretched vertically with scale factor 9.<br><b>a)</b> Write equation of resulting graph.<br><b>b)</b> Find scale factor of a horizontal stretch mapping part a) back to y = x².',
+    '<b>a)</b> y = 9x².<br><b>b)</b> We need f(qx) = x²: 9(qx)² = x² → 9q² = 1 → q = ⅓. Horizontal stretch scale factor = 1/q = 3.'),
+  makeQ(35,'<b>a)</b> Find equation from y = 2x³ stretched vertically ×8.<br><b>b)</b> Find horizontal stretch with same effect.',
+    '<b>a)</b> y = 16x³.<br><b>b)</b> 2(qx)³ = 16x³ → 2q³ = 16 → q³ = 8 → q = 2. Horizontal stretch scale factor = ½.'),
+  makeQ(36,'The graph of y = 2x³ − 5x² is reflected in the x-axis and then in the y-axis. Find equation of resulting graph.',
+    'Reflect in x-axis: y = −(2x³−5x²) = −2x³+5x².<br>Reflect in y-axis (replace x with −x): y = −2(−x)³+5(−x)² = 2x³+5x². <b>y = 2x³ + 5x²</b>'),
+  makeQ(37,'The graph of y = f(x) is stretched vertically ×5, then translated +3 up, giving y = g(x).<br><b>a)</b> Write g(x) in terms of f(x).<br><b>b)</b> If instead we translate +k up first, then stretch ×5 to get g(x) — find k.',
+    '<b>a)</b> g(x) = 5f(x) + 3.<br><b>b)</b> Translate first: y = f(x)+k. Stretch ×5: y = 5(f(x)+k) = 5f(x)+5k. For this to equal 5f(x)+3: 5k = 3, so <b>k = 3/5</b>.'),
+  makeQ(38,'The graph of y = f(x) is stretched vertically by factor 2 away from the line y = 1 (y = 1 is invariant). Find the equation.',
+    'Points on y = 1 stay fixed. For any other point, the distance from y = 1 doubles.<br>If y₀ is original y-value, new value = 1 + 2(y₀ − 1) = 2y₀ − 1.<br>So new equation: <b>y = 2f(x) − 1</b>.'),
+].join('');
+
+document.getElementById('ex16a-q1').innerHTML = q16a1;
+document.getElementById('ex16a-q2').innerHTML = q16a2;
+document.getElementById('ex16a-q3').innerHTML = q16a3;
+document.getElementById('ex16a-q4').innerHTML = q16a4;
+document.getElementById('ex16a-q5').innerHTML = q16a5;
+document.getElementById('ex16a-q6').innerHTML = q16a6;
+document.getElementById('ex16a-q7').innerHTML = q16a7;
+document.getElementById('ex16a-q8').innerHTML = q16a8;
+document.getElementById('ex16a-q9').innerHTML = q16a9;
+document.getElementById('ex16a-q10').innerHTML = q16a10;
+
+// ========== EXERCISE 16B ==========
+const ex16b = [
+  '<h3 style="font-size:1rem;font-weight:600;color:#1a1a2e;border-left:4px solid #e94560;padding-left:12px;margin-bottom:16px;">Questions 1–4: Sketch and label asymptotes and intercepts</h3>',
+  makeQ(1,'<b>a)</b> y = (2x+3)/(x+1) &nbsp;&nbsp; <b>b)</b> y = (3x+1)/(x+2)',
+    '<b>a)</b> a=2,b=3,c=1,d=1. VA: x=−1, HA: y=2, x-int: (−3/2, 0), y-int: (0, 3).<br><b>b)</b> a=3,b=1,c=1,d=2. VA: x=−2, HA: y=3, x-int: (−1/3, 0), y-int: (0, 1/2).'),
+  makeQ(2,'<b>a)</b> y = (3x−1)/(2x+1) &nbsp;&nbsp; <b>b)</b> y = (4x−3)/(3x+1)',
+    '<b>a)</b> VA: x=−½, HA: y=3/2, x-int: (1/3, 0), y-int: (0,−1).<br><b>b)</b> VA: x=−⅓, HA: y=4/3, x-int: (3/4, 0), y-int: (0,−3).'),
+  makeQ(3,'<b>a)</b> y = 3/(2x+1) &nbsp;&nbsp; <b>b)</b> y = 2/(3x−1)',
+    '<b>a)</b> a=0,b=3,c=2,d=1. VA: x=−½, HA: y=0, no x-int, y-int: (0, 3).<br><b>b)</b> VA: x=⅓, HA: y=0, no x-int, y-int: (0,−2).'),
+  makeQ(4,'<b>a)</b> y = x/(x−5) &nbsp;&nbsp; <b>b)</b> y = x/(x+3)',
+    '<b>a)</b> a=1,b=0,c=1,d=−5. VA: x=5, HA: y=1, x-int: (0, 0), y-int: (0, 0).<br><b>b)</b> VA: x=−3, HA: y=1, passes through origin.'),
+  '<h3 style="font-size:1rem;font-weight:600;color:#1a1a2e;border-left:4px solid #e94560;padding-left:12px;margin:20px 0 16px;">Questions 5–7: Transformations of 1/x</h3>',
+  makeQ(5,'<b>a)</b> Sketch y = 1/x with asymptotes.<br><b>b)</b> Describe transformation from y=1/x to y=1/x+2.<br><b>c)</b> Sketch y=1/x+2 with asymptotes.',
+    '<b>a)</b> Hyperbola; VA: x=0, HA: y=0.<br><b>b)</b> Vertical translation +2 (up 2).<br><b>c)</b> VA: x=0, HA: y=2. Same shape shifted up.'),
+  makeQ(6,'<b>a)</b> State asymptotes of y = 1/x.<br><b>b)</b> Describe transformation from y=1/x to y=1/(x−3).<br><b>c)</b> State asymptotes of y=1/(x−3).',
+    '<b>a)</b> VA: x=0, HA: y=0.<br><b>b)</b> Horizontal translation +3 (right 3).<br><b>c)</b> VA: x=3, HA: y=0.'),
+  makeQ(7,'<b>a)</b> Describe transformation from y=1/x to y=1/(x+2).<br><b>b)</b> Sketch both on same axes with asymptotes.',
+    '<b>a)</b> Horizontal translation −2 (left 2).<br><b>b)</b> y=1/x: VA x=0, HA y=0. y=1/(x+2): VA x=−2, HA y=0. Same hyperbola shape, shifted.'),
+  '<h3 style="font-size:1rem;font-weight:600;color:#1a1a2e;border-left:4px solid #e94560;padding-left:12px;margin:20px 0 16px;">Questions 8–11: Full analysis</h3>',
+  makeQ(8,'For y = (x+3)/(x−2):<br><b>a)</b> find axis intercepts &nbsp;<b>b)</b> find asymptotes &nbsp;<b>c)</b> sketch the graph.',
+    '<b>a)</b> x-int: x=−3 (set y=0); y-int: y=−3/2 (set x=0).<br><b>b)</b> VA: x=2, HA: y=1 (a/c = 1/1).<br><b>c)</b> Hyperbola with two branches around the asymptotes.'),
+  makeQ(9,'For y = (2x+3)/(x+1):<br><b>a)</b> find asymptotes &nbsp;&nbsp; <b>b)</b> find x-intercept.',
+    '<b>a)</b> VA: x=−1, HA: y=2.<br><b>b)</b> Set y=0: 2x+3=0 → x=−3/2.'),
+  makeQ(10,'Sketch y = (3x−1)/(2x+3), stating all asymptotes and axis intercepts.',
+    'VA: x=−3/2, HA: y=3/2. x-int: (1/3, 0), y-int: (0, −1/3). Hyperbola with two branches.'),
+  makeQ(11,'Sketch y = (4x+3)/(3x−1), stating all asymptotes and axis intercepts.',
+    'VA: x=1/3, HA: y=4/3. x-int: (−3/4, 0), y-int: (0, −3). Hyperbola.'),
+  '<h3 style="font-size:1rem;font-weight:600;color:#1a1a2e;border-left:4px solid #e94560;padding-left:12px;margin:20px 0 16px;">Questions 12–16: Extended questions</h3>',
+  makeQ(12,'<b>a)</b> Write (2x+5)/x in the form a + b/x.<br><b>b)</b> Describe two transformations from y=1/x to y=(2x+5)/x.<br><b>c)</b> State asymptotes of y=(2x+5)/x.',
+    '<b>a)</b> (2x+5)/x = 2 + 5/x.<br><b>b)</b> Vertical stretch ×5, then vertical translation +2.<br><b>c)</b> VA: x=0, HA: y=2.'),
+  makeQ(13,'<b>a)</b> Show that (2x−5)/(x−3) = 2 + 1/(x−3).<br><b>b)</b> Describe two transformations from y=1/x to y=(2x−5)/(x−3).<br><b>c)</b> Sketch y=(2x−5)/(x−3) with asymptotes.',
+    '<b>a)</b> 2 + 1/(x−3) = (2(x−3)+1)/(x−3) = (2x−6+1)/(x−3) = (2x−5)/(x−3) ✓<br><b>b)</b> Horizontal translation +3, then vertical translation +2.<br><b>c)</b> VA: x=3, HA: y=2. Same hyperbola shape as 1/x, repositioned.'),
+  makeQ(14,'<b>a)</b> Write (5x−1)/x in the form a − b/x.<br><b>b)</b> Describe two transformations from y=1/x to y=(5x−1)/x.<br><b>c)</b> Sketch y=(5x−1)/x with asymptotes and intercepts.',
+    '<b>a)</b> (5x−1)/x = 5 − 1/x.<br><b>b)</b> Reflect in x-axis (gives −1/x), then vertical translation +5.<br><b>c)</b> VA: x=0, HA: y=5. x-int: y=0 → 5x−1=0 → x=1/5.'),
+  makeQ(15,'<b>a)</b> Simplify (x²+2x)/(x²−4).<br><b>b)</b> Hence sketch y=(x²+2x)/(x²−4).',
+    '<b>a)</b> x(x+2)/((x−2)(x+2)) = x/(x−2) for x ≠ −2.<br><b>b)</b> Sketch y=x/(x−2) with VA: x=2, HA: y=1, and a hole at x=−2 (where y=1).'),
+  makeQ(16,'Sketch y=(x−a)/(x−b) in cases:<br><b>a)</b> 0 &lt; a &lt; b &nbsp;&nbsp; <b>b)</b> 0 &lt; b &lt; a',
+    '<b>a)</b> VA: x=b, HA: y=1. x-int: x=a (between 0 and b). y-int: y=a/b (positive, between 0 and 1).<br><b>b)</b> VA: x=b, HA: y=1. x-int: x=a (greater than b). y-int: y=a/b (greater than 1). The shape and branch positions differ.'),
+].join('');
+
+document.getElementById('ex16b-all').innerHTML = ex16b;
+
+// ========== EXERCISE 16C ==========
+const ex16c = [
+  '<h3 style="font-size:1rem;font-weight:600;color:#1a1a2e;border-left:4px solid #e94560;padding-left:12px;margin-bottom:16px;">Questions 1–4: Sketch exponential graphs (no calculator)</h3>',
+  makeQ(1,'<b>a)</b> y = 2ˣ &nbsp;&nbsp; <b>b)</b> y = 3ˣ',
+    '<b>a)</b> Increasing exponential through (0,1); faster growth for larger base. <b>b)</b> y=3ˣ grows faster than y=2ˣ; both pass through (0,1) with asymptote y=0.'),
+  makeQ(2,'<b>a)</b> y = 0.4ˣ &nbsp;&nbsp; <b>b)</b> y = 0.3ˣ',
+    'Both are decreasing exponentials (0&lt;a&lt;1), passing through (0,1). y=0.3ˣ decreases faster.'),
+  makeQ(3,'<b>a)</b> y = 2⁻ˣ &nbsp;&nbsp; <b>b)</b> y = 3⁻ˣ',
+    'y=2⁻ˣ=(½)ˣ, y=3⁻ˣ=(⅓)ˣ — both decreasing. Equivalently, reflections of y=2ˣ and y=3ˣ in the y-axis.'),
+  makeQ(4,'<b>a)</b> y = e⁻ˣ &nbsp;&nbsp; <b>b)</b> y = 10⁻ˣ',
+    'Both are decreasing exponentials (reflections of eˣ/10ˣ in y-axis). Pass through (0,1), asymptote y=0.'),
+  '<h3 style="font-size:1rem;font-weight:600;color:#1a1a2e;border-left:4px solid #e94560;padding-left:12px;margin:20px 0 16px;">Questions 5–8: Sketch exponential and log pairs on same axes</h3>',
+  makeQ(5,'<b>a)</b> y=2ˣ and y=log₂x &nbsp;&nbsp; <b>b)</b> y=4ˣ and y=log₄x',
+    'Each pair are inverse functions — reflections of each other in y=x. y=2ˣ through (0,1),(1,2); y=log₂x through (1,0),(2,1).'),
+  makeQ(6,'<b>a)</b> y=10ˣ and y=logx &nbsp;&nbsp; <b>b)</b> y=eˣ and y=lnx',
+    'Reflections of each other in y=x. y=eˣ through (0,1),(1,e); y=lnx through (1,0),(e,1).'),
+  makeQ(7,'<b>a)</b> y=0.5ˣ and y=log₀.₅x &nbsp;&nbsp; <b>b)</b> y=0.2ˣ and y=log₀.₂x',
+    'Both pairs are inverse functions. The exponentials are decreasing; the logs are also decreasing. Reflections in y=x.'),
+  makeQ(8,'<b>a)</b> y=5⁻ˣ and y=log₀.₂x &nbsp;&nbsp; <b>b)</b> y=4⁻ˣ and y=log₀.₂₅x',
+    '<b>a)</b> 5⁻ˣ=(1/5)ˣ=0.2ˣ, so these are inverse functions.<br><b>b)</b> 4⁻ˣ=(1/4)ˣ=0.25ˣ, so these are inverse functions. Sketch as reflections in y=x.'),
+  '<h3 style="font-size:1rem;font-weight:600;color:#1a1a2e;border-left:4px solid #e94560;padding-left:12px;margin:20px 0 16px;">Questions 9–12: Write in form eᵏˣ (calculator allowed)</h3>',
+  makeQ(9,'<b>a)</b> 2.1ˣ &nbsp;&nbsp; <b>b)</b> 1.7ˣ',
+    '<b>a)</b> k = ln(2.1) ≈ 0.742. So 2.1ˣ = e^(0.742x).<br><b>b)</b> k = ln(1.7) ≈ 0.531. So 1.7ˣ = e^(0.531x).'),
+  makeQ(10,'<b>a)</b> 4.2ˣ &nbsp;&nbsp; <b>b)</b> 5.1ˣ',
+    '<b>a)</b> k = ln(4.2) ≈ 1.44. &nbsp;<b>b)</b> k = ln(5.1) ≈ 1.63.'),
+  makeQ(11,'<b>a)</b> 0.6ˣ &nbsp;&nbsp; <b>b)</b> 0.5ˣ',
+    '<b>a)</b> k = ln(0.6) ≈ −0.511. &nbsp;<b>b)</b> k = ln(0.5) ≈ −0.693.'),
+  makeQ(12,'<b>a)</b> (1/3)ˣ &nbsp;&nbsp; <b>b)</b> (1/4)ˣ',
+    '<b>a)</b> k = ln(1/3) = −ln3 ≈ −1.10. &nbsp;<b>b)</b> k = ln(1/4) = −ln4 ≈ −1.39.'),
+  '<h3 style="font-size:1rem;font-weight:600;color:#1a1a2e;border-left:4px solid #e94560;padding-left:12px;margin:20px 0 16px;">Q13: Match graphs &nbsp;|&nbsp; Q14–17: Further sketching &nbsp;|&nbsp; Q18–19: Match log graphs</h3>',
+  makeQ(13,'Match each graph (A, B, C — shown in textbook) with its equation:<br>i) y=2ˣ &nbsp; ii) y=eˣ &nbsp; iii) y=0.5ˣ',
+    'The steepest increasing graph = eˣ (e≈2.718). Second steepest = 2ˣ. The decreasing graph = 0.5ˣ.<br>A=eˣ (middle-speed increasing), B=2ˣ (slightly slower), C=0.5ˣ (decreasing) — or A=eˣ, B=2ˣ, C=0.5ˣ depending on ordering shown.'),
+  makeQ(14,'Sketch y=2ˣ and y=(½)ˣ on same axes, with asymptotes and intercepts.',
+    'y=2ˣ: increasing, through (0,1), asymptote y=0.<br>y=(½)ˣ=2⁻ˣ: decreasing, through (0,1), asymptote y=0.<br>They are reflections of each other in the y-axis.'),
+  makeQ(15,'Sketch y=eˣ and y=eˣ+2 on same diagram with asymptotes and y-intercepts.',
+    'y=eˣ: through (0,1), asymptote y=0.<br>y=eˣ+2: vertical translation +2, through (0,3), asymptote y=2.'),
+  makeQ(16,'Sketch y=eˣ and y=3eˣ on same diagram with asymptotes and y-intercepts.',
+    'y=eˣ: through (0,1). y=3eˣ: vertical stretch ×3, through (0,3). Both have asymptote y=0.'),
+  makeQ(17,'Sketch y=6ˣ and y=log₆x on same axes, showing their relationship.',
+    'They are inverse functions — reflections of each other in y=x.<br>y=6ˣ: through (0,1),(1,6). y=log₆x: through (1,0),(6,1).'),
+  makeQ(18,'Match the graphs with equations: i) y=lnx &nbsp; ii) y=log₂x &nbsp; iii) y=log₅x',
+    'All pass through (1,0). Larger base → grows more slowly for x>1.<br>A (grows fastest) = log₂x. B (middle) = lnx (base e≈2.718). C (grows slowest) = log₅x.'),
+  makeQ(19,'Match graphs with: i) y=log₂x &nbsp; ii) y=log₀.₅x &nbsp; iii) y=log₀.₂x',
+    'log₂x: increasing. log₀.₅x and log₀.₂x: decreasing (base<1).<br>log₀.₂x decreases faster than log₀.₅x.<br>A=log₂x, B=log₀.₅x, C=log₀.₂x (or vice versa based on diagram).'),
+  makeQ(20,'Sketch y=lnx and y=ln(x−2) on same diagram, with asymptotes and y-intercepts.',
+    'y=lnx: VA x=0, passes (1,0).<br>y=ln(x−2): horizontal translation +2, VA x=2, passes (3,0). No y-intercept (domain x>2).'),
+  makeQ(21,'The diagram shows y=a+beˣ with y-intercept 5 and asymptote y=2.<br><b>a)</b> Write the value of a. &nbsp;<b>b)</b> Find b.',
+    '<b>a)</b> Horizontal asymptote as x→−∞: y→a. So <b>a=2</b>.<br><b>b)</b> y-intercept (x=0): 5=2+be⁰=2+b → <b>b=3</b>.'),
+  makeQ(22,'y=eˣ is translated vertically by 3 units then stretched vertically ×2. Find:<br><b>a)</b> y-intercept &nbsp;<b>b)</b> horizontal asymptote.',
+    'After translate +3: y=eˣ+3. After vertical stretch ×2: y=2(eˣ+3)=2eˣ+6.<br><b>a)</b> x=0: y=2+6=<b>8</b>.<br><b>b)</b> As x→−∞, 2eˣ→0, so y→<b>6</b>. HA: y=6.'),
+  makeQ(23,'y=lnx is translated 5 units in the negative x-direction.<br><b>a)</b> Write vertical asymptote. &nbsp;<b>b)</b> Sketch with asymptote and intercepts.',
+    '<b>a)</b> y=ln(x+5): domain x>−5, VA: <b>x=−5</b>.<br><b>b)</b> x-int: ln(x+5)=0 → x+5=1 → x=−4. y-int: ln(5)≈1.61. Sketch as ln curve shifted left 5.'),
+  makeQ(24,'The curve y=Caˣ passes through (2, 48) and has y-intercept 3. Find C and a.',
+    'y-int (x=0): C·a⁰ = C = <b>3</b>.<br>Using (2, 48): 3·a² = 48 → a² = 16 → <b>a = 4</b>.'),
+  makeQ(25,'y=eᵏˣ−c. From the diagram: y-int=−1, passes through (1, 0.340).<br><b>a)</b> Write value of c. &nbsp;<b>b)</b> Find k to 2 d.p.',
+    '<b>a)</b> x=0: e⁰−c=1−c=−1 → <b>c=2</b>.<br><b>b)</b> x=1: eᵏ−2=0.340 → eᵏ=2.340 → k=ln(2.340)≈<b>0.85</b>.'),
+  makeQ(26,'<b>a)</b> Write 5.2ˣ in form eᵏˣ, k to 3 s.f.<br><b>b)</b> Describe transformation from y=eˣ to y=5.2ˣ.',
+    '<b>a)</b> k=ln(5.2)≈1.65. So 5.2ˣ=e^(1.65x).<br><b>b)</b> y=eˣ → y=e^(1.65x): horizontal stretch with scale factor 1/1.65≈0.606.'),
+  makeQ(27,'Let f(x)=3eˣ−2, x∈ℝ.<br><b>a)</b> Find range. &nbsp;<b>b)</b> Find f⁻¹(x) and its domain. &nbsp;<b>c)</b> Sketch both.',
+    '<b>a)</b> eˣ>0, so 3eˣ>0, so f(x)>−2. Range: <b>f(x)>−2</b> i.e. (−2,∞).<br><b>b)</b> y=3eˣ−2 → y+2=3eˣ → eˣ=(y+2)/3 → x=ln((y+2)/3). So f⁻¹(x)=ln((x+2)/3). Domain: x>−2.<br><b>c)</b> Both are reflections of each other in y=x.'),
+  makeQ(28,'<b>a)</b> y=lnx is stretched horizontally with scale factor ⅓. Write resulting equation.<br><b>b)</b> Describe a single different transformation achieving the same effect.',
+    '<b>a)</b> Horizontal stretch ×⅓: replace x with 3x → <b>y=ln(3x)</b>.<br><b>b)</b> ln(3x)=ln3+lnx. So this is also a <b>vertical translation by ln3</b> of y=lnx.'),
+  makeQ(29,'<b>a)</b> Describe transformation from y=eˣ to y=5eˣ.<br><b>b)</b> Describe a different transformation with same effect.',
+    '<b>a)</b> <b>Vertical stretch</b> with scale factor 5.<br><b>b)</b> 5eˣ=e^(ln5)·eˣ=e^(x+ln5). So also a <b>horizontal translation by −ln5</b> (left by ln5).'),
+].join('');
+
+document.getElementById('ex16c-all').innerHTML = '<h3 style="font-size:1.1rem;font-weight:600;color:#1a1a2e;margin-bottom:16px;">Exercise 16C — All Questions</h3>' + ex16c;
+
+// ========== MIXED PRACTICE ==========
+const mixedPractice = [
+  '<h3 style="font-size:1rem;font-weight:600;color:#1a1a2e;border-left:4px solid #e94560;padding-left:12px;margin-bottom:16px;">Mixed Practice — All Questions</h3>',
+  makeQ('MP1','The graph of y=f(x) has VA x=−2 and passes through (5,2) and (4,0). Sketch on separate diagrams:<br><b>a)</b> y=2f(x−3) &nbsp; <b>b)</b> y=−f(2x) &nbsp; <b>c)</b> y=f(x/3)−2',
+    '<b>a)</b> Horizontal +3, vertical ×2. VA: x=1. Key points: (5,2)→(8,4), (4,0)→(7,0).<br><b>b)</b> Horizontal ×½, reflect x-axis. VA: x=−1. (5,2)→(2.5,−2), (4,0)→(2,0).<br><b>c)</b> Horizontal ×3, vertical −2. VA: x=−6. (5,2)→(15,0), (4,0)→(12,−2).'),
+  makeQ('MP2','y=x³−2x is translated 3 right then stretched ×2 vertically. Find equation in y=ax³+bx²+cx+d form.',
+    'Step 1: f(x−3)=(x−3)³−2(x−3)=x³−9x²+27x−27−2x+6=x³−9x²+25x−21.<br>Step 2: 2f(x−3)=<b>2x³−18x²+50x−42</b>.'),
+  makeQ('MP3','<b>a)</b> Write x²+4x+9 in form (x+h)²+k.<br><b>b)</b> Describe two transformations from y=x² to y=x²+4x+9.',
+    '<b>a)</b> (x+2)²−4+9=<b>(x+2)²+5</b>.<br><b>b)</b> Horizontal translation −2 (left 2), then vertical translation +5 (up 5).'),
+  makeQ('MP4','y=1/x is translated 2 units in negative x-direction, then stretched ×3 vertically.<br><b>a)</b> Write equation. &nbsp;<b>b)</b> Sketch with asymptotes and intercepts.',
+    '<b>a)</b> Translate: y=1/(x+2). Stretch ×3: <b>y=3/(x+2)</b>.<br><b>b)</b> VA: x=−2, HA: y=0. No x-intercept (numerator never 0). y-intercept: y=3/2.'),
+  makeQ('MP5','<b>a)</b> Show 2+1/(x−5)=(2x−9)/(x−5).<br><b>b)</b> Describe two transformations from y=1/x to y=(2x−9)/(x−5).<br><b>c)</b> State asymptotes of y=(2x−9)/(x−5).',
+    '<b>a)</b> 2+1/(x−5)=(2(x−5)+1)/(x−5)=(2x−10+1)/(x−5)=(2x−9)/(x−5) ✓<br><b>b)</b> Horizontal translation +5, then vertical translation +2.<br><b>c)</b> VA: x=5, HA: y=2.'),
+  makeQ('MP6','Sketch the following, indicating VA and x-intercept:<br><b>a)</b> y=lnx &nbsp; <b>b)</b> y=3ln(x−2) &nbsp; <b>c)</b> y=5−ln(3x)',
+    '<b>a)</b> VA x=0, x-int (1,0).<br><b>b)</b> VA x=2, x-int: 3ln(x−2)=0 → x=3. y-int: none (domain x>2).<br><b>c)</b> VA x=0, x-int: 5=ln(3x) → 3x=e⁵ → x=e⁵/3≈49.5.'),
+  makeQ('MP7','y=ax+b is transformed: translate right 3, stretch ×7, reflect in x-axis → y=35−21x. Find a and b.',
+    'Start: y=ax+b. Translate right 3: y=a(x−3)+b=ax−3a+b. Stretch ×7: y=7ax−21a+7b. Reflect: y=−7ax+21a−7b.<br>Match with 35−21x: −7a=−21→a=3; 21a−7b=35→63−7b=35→b=4. <b>a=3, b=4</b>.'),
+  makeQ('MP8','Find two transformations mapping y=9(x−3)² to y=3(x+2)².',
+    '9(x−3)²=3·3(x−3)². 3(x+2)²=3(x+2)². Need 3(x−3)²→3(x+2)².<br>This is a horizontal translation of −5 (left 5): 3((x+5)−3−5+5)²... Let\'s verify: replace x with x+5 in 3(x−3)²: 3(x+5−3)²=3(x+2)² ✓. But also: 9(x−3)²=3·3(x−3)², and 3(x+2)². So: vertical stretch ×⅓ AND horizontal translation −5. Both transformations together.'),
+  makeQ('MP9','y=lnx translated 2 right, then 3 up, then stretched ×2 vertically. Find equation as y=ln(g(x)).',
+    'Step 1: ln(x−2). Step 2: ln(x−2)+3. Step 3: 2(ln(x−2)+3)=2ln(x−2)+6=ln((x−2)²)+ln(e⁶)=ln(e⁶(x−2)²).<br><b>y = ln(e⁶(x−2)²)</b>'),
+  makeQ('MP10','For y=(4x−3)/(2x+7):<br><b>a)</b> asymptotes &nbsp; <b>b)</b> axis intercepts &nbsp; <b>c)</b> sketch.',
+    '<b>a)</b> VA: x=−7/2=−3.5, HA: y=4/2=2.<br><b>b)</b> x-int: y=0→4x−3=0→x=3/4. y-int: x=0→y=−3/7.<br><b>c)</b> Hyperbola with two branches.'),
+  makeQ('MP11','Let f(x)=(3x−1)/(x+5).<br><b>a)</b> Asymptotes of y=f(x). &nbsp;<b>b)</b> Domain and range.',
+    '<b>a)</b> VA: x=−5, HA: y=3.<br><b>b)</b> Domain: x∈ℝ, x≠−5. Range: f(x)∈ℝ, f(x)≠3.'),
+  makeQ('MP12','<b>a)</b> Describe transformation from y=lnx to y=ln(x+3).<br><b>b)</b> Sketch y=ln(x+3) and y=ln(x²+6x+9) on same diagram for x>−3.',
+    '<b>a)</b> Horizontal translation −3 (left 3).<br><b>b)</b> ln(x²+6x+9)=ln((x+3)²)=2ln(x+3) for x>−3. So it\'s a vertical stretch ×2 of y=ln(x+3). Both share VA x=−3, x-int (−2,0).'),
+  makeQ('MP13','f(x)=p+qx−x² has maximum 5 at x=3.<br><b>a)</b> Find p and q. &nbsp;<b>b)</b> Translate 3 right — find new equation.',
+    '<b>a)</b> Vertex at x=3: f\'(x)=q−2x=0→x=q/2=3→q=6. Max value: p+6(3)−9=p+9=5→p=−4.<br>So f(x)=−4+6x−x².<br><b>b)</b> f(x−3)=−4+6(x−3)−(x−3)²=−4+6x−18−x²+6x−9=−x²+12x−31.'),
+  makeQ('MP14','f(x)=p+9/(x−q), x≠q. VA is x=3. y-intercept at (0,4).<br><b>a)</b> q &nbsp;<b>b)</b> p &nbsp;<b>c)</b> HA.',
+    '<b>a)</b> VA: x=q=<b>3</b>.<br><b>b)</b> y-int: p+9/(0−3)=p−3=4→<b>p=7</b>.<br><b>c)</b> As x→∞: 9/(x−3)→0, so y→p=<b>7</b>. HA: y=7.'),
+  makeQ('MP15','N(t)=ab⁻ᵗ+40, t≥0. At t=0: N=840. At t=4: N=90.<br><b>a)</b> Find a. &nbsp;<b>b)</b> Find b. &nbsp;<b>c)</b> Value of p (lower bound for N).',
+    '<b>a)</b> t=0: ab⁰+40=a+40=840→<b>a=800</b>.<br><b>b)</b> t=4: 800b⁻⁴+40=90→800b⁻⁴=50→b⁴=16→<b>b=2</b>.<br><b>c)</b> As t→∞: ab⁻ᵗ→0, so N→40. <b>p=40</b>.'),
+  makeQ('MP16','f(x)=lnx. g is f translated 3 right and 2 down, then reflected in x-axis. Find g(x) as a single logarithm.',
+    'Translate: ln(x−3)−2. Reflect in x-axis: −(ln(x−3)−2)=−ln(x−3)+2=ln(1/(x−3))+ln(e²)=<b>ln(e²/(x−3))</b>.'),
+  makeQ('MP17','f(x)=(2x−9)/(x−5).<br><b>a)</b> Asymptotes. &nbsp;<b>b)</b> Find α,β if f(x)=α+β/(x−5). &nbsp;<b>c)</b> Two transformations from y=1/x to y=f(x). &nbsp;<b>d)</b> f⁻¹(x). &nbsp;<b>e)</b> Describe transformation from y=f(x) to y=f⁻¹(x).',
+    '<b>a)</b> VA: x=5, HA: y=2.<br><b>b)</b> (2x−9)/(x−5)=2+(2·5−9)/(x−5)=2+1/(x−5). So α=2, β=1.<br><b>c)</b> Horizontal translation +5, then vertical translation +2.<br><b>d)</b> y=(2x−9)/(x−5)→y(x−5)=2x−9→xy−5y=2x−9→x(y−2)=5y−9→x=(5y−9)/(y−2). So f⁻¹(x)=(5x−9)/(x−2).<br><b>e)</b> Reflection in the line y=x.'),
+  makeQ('MP18','Prove y=2ˣ can be created by stretching y=4ˣ. Describe the stretch.',
+    '4ˣ=(2²)ˣ=2^(2x). We want 2ˣ: replace x with x/2 in 4ˣ: 4^(x/2)=2^(2·x/2)=2ˣ ✓.<br>So: horizontal stretch of y=4ˣ with scale factor 2 gives y=2ˣ.'),
+  makeQ('MP19','Describe the stretch mapping y=lnx to y=log₁₀x.',
+    'lnx=log₁₀x/log₁₀e=log₁₀x·(1/ln10)... better: log₁₀x=lnx/ln10. So log₁₀x=(1/ln10)lnx.<br>This is a <b>vertical stretch with scale factor 1/ln10 ≈ 0.434</b>.'),
+  makeQ('MP20','Sketch y=log(x²−8x+16).',
+    'x²−8x+16=(x−4)². So y=log((x−4)²)=2log|x−4| for x≠4.<br>VA: x=4. x-int: (x−4)²=1→x=3 or x=5.<br>Graph has two branches (one each side of x=4), both rising away from x=4.'),
+  makeQ('MP21','The graph shows y=f(x). Sketch y=xf(x).',
+    'y=xf(x): at x-intercepts of f(x), y=xf(x)=0 still. At x=0, y=0·f(0)=0. The product amplifies values for |x|>1 and compresses for |x|<1. Sketch by multiplying y-values of f(x) by the corresponding x-value at each point.'),
+  makeQ('MP22','The graph y=f(x) is reflected in the line y=1. Find the equation of the new graph.',
+    'Reflecting in y=1: new y = 1 − (f(x) − 1) = 2 − f(x).<br><b>y = 2 − f(x)</b>'),
+  makeQ('MP23','Prove that if f(x²)=x²f(x) for all x, then y=f(x) has the y-axis as a line of reflection symmetry.',
+    'We need to show f(−x)=f(x) for all x.<br>Apply condition at −x: f((−x)²)=(−x)²f(−x) → f(x²)=x²f(−x).<br>But also f(x²)=x²f(x) (given). So x²f(x)=x²f(−x). For x≠0, divide by x²: f(x)=f(−x). ✓ (At x=0, trivially f(0)=f(0).) So f is even, meaning y=f(x) is symmetric about the y-axis.'),
+].join('');
+
+document.getElementById('mixed-all').innerHTML = mixedPractice;
+
+showSlide(0);
+</script>
+</body>
+</html>
